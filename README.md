@@ -32,19 +32,12 @@ Plan and design docs:
 ## Local Dev
 ```bash
 npm install
-npm run dev:server
+npm run dev
 ```
 
-In another terminal:
-```bash
-npm run dev:web
-```
+Open `http://localhost:5173`. `npm run dev` starts the API server (`:8080`) and the Vite dev server (`:5173`) concurrently; the Vite config proxies `/leaderboard`, `/score`, and `/game-start` to `:8080`, so leaderboard data flows without any env var.
 
-Open `http://localhost:5173`.
-
-Notes:
-- API server runs on `http://localhost:8080`.
-- Web defaults to same-origin API in production; for Vite dev set `VITE_API_BASE=http://localhost:8080` if needed.
+If you prefer separate terminals, run `npm run dev:server` and `npm run dev:web` instead. To point the web app at an API on a non-default host or port, set `VITE_API_BASE` (e.g. `VITE_API_BASE=http://localhost:9090`) — when set it bypasses the proxy.
 
 ## Local Production Run
 ```bash

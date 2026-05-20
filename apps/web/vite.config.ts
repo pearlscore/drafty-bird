@@ -11,5 +11,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    proxy: {
+      '/leaderboard': 'http://localhost:8080',
+      '/score': 'http://localhost:8080',
+      '/game-start': 'http://localhost:8080',
+    },
   },
 });
