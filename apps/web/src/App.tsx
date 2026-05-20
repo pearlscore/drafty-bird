@@ -8,10 +8,92 @@ import {
   flap,
   stepGame,
   type GameState,
+  type Obstacle,
 } from './game';
 import './styles.css';
 
 const TICK_MS = Math.round(1000 / 60);
+
+const drawAirflow = (ctx: CanvasRenderingContext2D, obstacle: Obstacle, tick: number): void => {
+  const streamCount = obstacle.draftLevel * 2 + 1;
+  const dashLen = 14;
+  const gapLen = 10;
+  const cycle = dashLen + gapLen;
+  const speed = 1.8 + obstacle.draftLevel * 1.2;
+  const offset = -tick * speed * obstacle.draftDirection;
+  const padding = 6;
+  const startY = obstacle.gapTop - padding;
+  const endY = obstacle.gapTop + obstacle.gapHeight + padding;
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(37, 151, 236, ${0.28 + obstacle.draftLevel * 0.14})`;
+  ctx.lineWidth = 1 + obstacle.draftLevel * 0.5;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([dashLen, gapLen]);
+  ctx.lineDashOffset = ((offset % cycle) + cycle) % cycle;
+
+  for (let i = 0; i < streamCount; i += 1) {
+    const x = obstacle.x + (obstacle.width / (streamCount + 1)) * (i + 1);
+    ctx.beginPath();
+    ctx.moveTo(x, startY);
+    ctx.lineTo(x, endY);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+};
+
+const drawDraftDetector = (
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  angle: number,
+): void => {
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  ctx.fillStyle = '#04B290';
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#1C4C75';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.rotate(angle);
+  const armLen = radius * 0.95;
+  for (let i = 0; i < 3; i += 1) {
+    const angle = (i * 2 * Math.PI) / 3;
+    const ax = Math.cos(angle) * armLen;
+    const ay = Math.sin(angle) * armLen;
+
+    ctx.strokeStyle = '#1C4C75';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(ax, ay);
+    ctx.stroke();
+
+    ctx.fillStyle = '#FCAF1F';
+    ctx.beginPath();
+    ctx.arc(ax, ay, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1C4C75';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#1C4C75';
+  ctx.beginPath();
+  ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+};
 
 const drawGame = (canvas: HTMLCanvasElement, state: GameState): void => {
   const ctx = canvas.getContext('2d');
@@ -27,8 +109,8 @@ const drawGame = (canvas: HTMLCanvasElement, state: GameState): void => {
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-  ctx.fillStyle = '#1C4C75';
   for (const obstacle of state.obstacles) {
+    ctx.fillStyle = '#1C4C75';
     ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.gapTop);
     ctx.fillRect(
       obstacle.x,
@@ -40,13 +122,11 @@ const drawGame = (canvas: HTMLCanvasElement, state: GameState): void => {
     ctx.fillStyle = '#2597EC';
     ctx.fillRect(obstacle.x - 4, obstacle.gapTop - 8, obstacle.width + 8, 8);
     ctx.fillRect(obstacle.x - 4, obstacle.gapTop + obstacle.gapHeight, obstacle.width + 8, 8);
-    ctx.fillStyle = '#1C4C75';
+
+    drawAirflow(ctx, obstacle, state.tick);
   }
 
-  ctx.beginPath();
-  ctx.fillStyle = '#04B290';
-  ctx.arc(state.bird.x, state.bird.y, state.bird.radius, 0, Math.PI * 2);
-  ctx.fill();
+  drawDraftDetector(ctx, state.bird.x, state.bird.y, state.bird.radius, state.detectorAngle);
 
   ctx.fillStyle = '#1C4C75';
   ctx.font = 'bold 42px Lato, system-ui, sans-serif';
