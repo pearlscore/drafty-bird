@@ -7,10 +7,21 @@ const GRAVITY = 0.32;
 const FLAP_VELOCITY = -6.3;
 const PIPE_SPEED = 2.9;
 const PIPE_WIDTH = 82;
-const PIPE_GAP_HEIGHT = 168;
 const PIPE_SPAWN_TICKS = 94;
-const MIN_GAP_TOP = 70;
-const MAX_GAP_TOP = GAME_HEIGHT - PIPE_GAP_HEIGHT - 70;
+const GAP_EDGE_MARGIN = 60;
+const MAX_GAP_CENTER_DELTA = 180;
+const DRAFT_PUSH_PER_LEVEL = 0.045;
+const SPIN_BASE = 0.08;
+const SPIN_PER_LEVEL = 0.14;
+
+export type DraftLevel = 1 | 2 | 3;
+export type DraftDirection = -1 | 1;
+
+export const DRAFT_GAP_HEIGHTS: Record<DraftLevel, number> = {
+  1: 150,
+  2: 180,
+  3: 220,
+};
 
 export type GamePhase = 'idle' | 'running' | 'gameover';
 
@@ -27,6 +38,8 @@ export interface Obstacle {
   width: number;
   gapTop: number;
   gapHeight: number;
+  draftLevel: DraftLevel;
+  draftDirection: DraftDirection;
   passed: boolean;
 }
 
@@ -37,6 +50,8 @@ export interface GameState {
   rngSeed: number;
   nextObstacleTick: number;
   nextObstacleId: number;
+  lastGapCenter: number | null;
+  detectorAngle: number;
   bird: Bird;
   obstacles: Obstacle[];
   score: number;
@@ -52,6 +67,8 @@ export const createInitialState = (seed = 1337): GameState => ({
   rngSeed: seed >>> 0,
   nextObstacleTick: PIPE_SPAWN_TICKS,
   nextObstacleId: 1,
+  lastGapCenter: null,
+  detectorAngle: 0,
   bird: {
     x: 220,
     y: GAME_HEIGHT / 2,
@@ -93,6 +110,7 @@ export const stepGame = (state: GameState): GameState => {
   let seed = state.rngSeed;
   let nextObstacleId = state.nextObstacleId;
   let nextObstacleTick = state.nextObstacleTick;
+  let lastGapCenter = state.lastGapCenter;
 
   const movedObstacles = state.obstacles
     .map((obstacle) => ({
@@ -102,18 +120,42 @@ export const stepGame = (state: GameState): GameState => {
     .filter((obstacle) => obstacle.x + obstacle.width > -8);
 
   if (tick >= nextObstacleTick) {
-    const randomResult = nextRandom(seed);
-    seed = randomResult.seed;
-    const gapTop =
-      MIN_GAP_TOP + Math.floor(randomResult.value * (MAX_GAP_TOP - MIN_GAP_TOP + 1));
+    const levelRoll = nextRandom(seed);
+    seed = levelRoll.seed;
+    const draftLevel = (Math.floor(levelRoll.value * 3) + 1) as DraftLevel;
+    const gapHeight = DRAFT_GAP_HEIGHTS[draftLevel];
+
+    const directionRoll = nextRandom(seed);
+    seed = directionRoll.seed;
+    const draftDirection: DraftDirection = directionRoll.value < 0.5 ? -1 : 1;
+
+    const positionRoll = nextRandom(seed);
+    seed = positionRoll.seed;
+    const minGapTop = GAP_EDGE_MARGIN;
+    const maxGapTop = GAME_HEIGHT - gapHeight - GAP_EDGE_MARGIN;
+    let gapTop = minGapTop + Math.floor(positionRoll.value * (maxGapTop - minGapTop + 1));
+
+    if (lastGapCenter !== null) {
+      const center = gapTop + gapHeight / 2;
+      const delta = center - lastGapCenter;
+      if (Math.abs(delta) > MAX_GAP_CENTER_DELTA) {
+        const clampedCenter = lastGapCenter + Math.sign(delta) * MAX_GAP_CENTER_DELTA;
+        gapTop = Math.round(clampedCenter - gapHeight / 2);
+        gapTop = Math.max(minGapTop, Math.min(maxGapTop, gapTop));
+      }
+    }
+
     movedObstacles.push({
       id: nextObstacleId,
       x: GAME_WIDTH + PIPE_WIDTH,
       width: PIPE_WIDTH,
       gapTop,
-      gapHeight: PIPE_GAP_HEIGHT,
+      gapHeight,
+      draftLevel,
+      draftDirection,
       passed: false,
     });
+    lastGapCenter = gapTop + gapHeight / 2;
     nextObstacleId += 1;
     nextObstacleTick += PIPE_SPAWN_TICKS;
   }
@@ -122,7 +164,17 @@ export const stepGame = (state: GameState): GameState => {
     ...state.bird,
     velocityY: state.bird.velocityY + GRAVITY,
   };
+
+  const activeObstacle = movedObstacles.find(
+    (o) => bird.x + bird.radius > o.x && bird.x - bird.radius < o.x + o.width,
+  );
+  const activeDraftLevel = activeObstacle?.draftLevel ?? 0;
+  if (activeObstacle) {
+    bird.velocityY += activeObstacle.draftDirection * activeDraftLevel * DRAFT_PUSH_PER_LEVEL;
+  }
   bird.y += bird.velocityY;
+
+  const detectorAngle = state.detectorAngle + SPIN_BASE + activeDraftLevel * SPIN_PER_LEVEL;
 
   let score = state.score;
   const scoredObstacles = movedObstacles.map((obstacle) => {
@@ -142,6 +194,8 @@ export const stepGame = (state: GameState): GameState => {
       rngSeed: seed,
       nextObstacleId,
       nextObstacleTick,
+      lastGapCenter,
+      detectorAngle,
       bird,
       obstacles: scoredObstacles,
       score,
@@ -155,6 +209,8 @@ export const stepGame = (state: GameState): GameState => {
     rngSeed: seed,
     nextObstacleId,
     nextObstacleTick,
+    lastGapCenter,
+    detectorAngle,
     bird,
     obstacles: scoredObstacles,
     score,

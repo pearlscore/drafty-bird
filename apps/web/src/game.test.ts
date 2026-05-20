@@ -9,6 +9,8 @@ describe('game logic', () => {
       width: 50,
       gapTop: 0,
       gapHeight: 40,
+      draftLevel: 1,
+      draftDirection: 1,
       passed: false,
     };
 
@@ -27,6 +29,8 @@ describe('game logic', () => {
           width: 60,
           gapTop: 180,
           gapHeight: 180,
+          draftLevel: 2,
+          draftDirection: 1,
           passed: false,
         },
       ],
