@@ -70,6 +70,32 @@ body {
   cursor: pointer;
 }
 
+.restart-prompt {
+  margin-top: 12px;
+  width: 100%;
+  padding: 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: var(--pearl-teal);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+
+.restart-prompt:hover {
+  background: var(--pearl-teal);
+  filter: brightness(1.06);
+  transform: none;
+}
+
+.restart-prompt:focus-visible {
+  outline: 3px solid var(--pearl-gold);
+  outline-offset: 3px;
+}
+
 .meta-row {
   margin-top: 12px;
   display: flex;

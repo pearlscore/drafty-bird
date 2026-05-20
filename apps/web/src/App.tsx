@@ -160,6 +160,8 @@ const App = (): JSX.Element => {
   const [game, setGame] = useState(() => createInitialState());
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [apiStatus, setApiStatus] = useState('API available');
+  const [showRestartPrompt, setShowRestartPrompt] = useState(false);
+  const restartPromptRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -216,12 +218,31 @@ const App = (): JSX.Element => {
     void completeRun();
   }, [game.phase, game.runId, game.score]);
 
+  useEffect(() => {
+    if (game.phase !== 'gameover') {
+      setShowRestartPrompt(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setShowRestartPrompt(true), 1000);
+    return () => window.clearTimeout(timer);
+  }, [game.phase, game.runId]);
+
+  useEffect(() => {
+    if (showRestartPrompt) {
+      restartPromptRef.current?.focus();
+    }
+  }, [showRestartPrompt]);
+
+  const startNewRun = () => {
+    setGame((prev) => beginGame(prev));
+    void notifyGameStarted().catch(() => {
+      setApiStatus('API unreachable. Gameplay unaffected.');
+    });
+  };
+
   const handleFlap = () => {
     if (game.phase === 'idle') {
-      setGame((prev) => beginGame(prev));
-      void notifyGameStarted().catch(() => {
-        setApiStatus('API unreachable. Gameplay unaffected.');
-      });
+      startNewRun();
       return;
     }
 
@@ -234,6 +255,11 @@ const App = (): JSX.Element => {
         return;
       }
       event.preventDefault();
+
+      if (showRestartPrompt) {
+        startNewRun();
+        return;
+      }
 
       let started = false;
       setGame((prev) => {
@@ -255,7 +281,7 @@ const App = (): JSX.Element => {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  }, [showRestartPrompt]);
 
   const restartRun = () => {
     setGame((prev) => ({
@@ -283,6 +309,16 @@ const App = (): JSX.Element => {
             onClick={handleFlap}
             className="game-canvas"
           />
+          {game.phase === 'gameover' && showRestartPrompt && (
+            <button
+              type="button"
+              ref={restartPromptRef}
+              className="restart-prompt"
+              onClick={startNewRun}
+            >
+              Press Space or click to fly again
+            </button>
+          )}
           <div className="meta-row" role="status" aria-live="polite">
             <span>{game.statusText}</span>
             <button type="button" onClick={restartRun}>
