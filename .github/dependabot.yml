@@ -1,0 +1,39 @@
+# Pearl's dependency-update policy.
+#
+# Weekly, with a 7-day cooldown on every ecosystem: upstream gets a week to
+# publish a patch or yank a bad release before Pearl sees the PR. Security
+# advisories bypass the cooldown, so this reduces noise without delaying
+# vulnerability remediation.
+#
+# Clojure note: Dependabot supports neither deps.edn nor bb.edn, and Pearl has
+# not adopted a tool that does, so those dependencies are governed by the
+# release-age rule in the global agent rules instead.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"
