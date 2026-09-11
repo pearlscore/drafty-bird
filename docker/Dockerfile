@@ -1,14 +1,14 @@
-FROM node:20-bookworm-slim AS build
+FROM oven/bun:1.4.0-debian AS build
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json bun.lock bunfig.toml ./
+RUN bun ci
 
 COPY . .
-RUN npm run build
-RUN npm prune --omit=dev
+RUN bun run build
+RUN bun install --frozen-lockfile --production
 
-FROM node:20-bookworm-slim AS runtime
+FROM oven/bun:1.4.0-debian AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -21,8 +21,8 @@ COPY --from=build /app/dist/server ./dist/server
 COPY --from=build /app/apps/web/dist ./public
 COPY package.json ./
 
-RUN mkdir -p /data && chown -R node:node /app /data
-USER node
+RUN mkdir -p /data && chown -R bun:bun /app /data
+USER bun
 
 EXPOSE 8080
-CMD ["node", "dist/server/index.js"]
+CMD ["bun", "dist/server/index.js"]

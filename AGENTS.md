@@ -146,7 +146,7 @@ Therefore: do not include IaC. Provide *interfaces* and *docs* only.
   - server: endpoint tests (health/ready/metrics) + chaos behavior tests
 - Deterministic builds; lockfiles committed
 - Keep dependencies minimal and reputable
-- Node LTS (document exact version; prefer `.nvmrc`)
+- Bun (document exact version in `.bun-version`)
 
 ## Step-by-Step Plan (must follow)
 ### Phase 0 — Plan
@@ -181,8 +181,8 @@ Therefore: do not include IaC. Provide *interfaces* and *docs* only.
 
 ### Phase 4 — Acceptance Checklist
 Create `docs/ACCEPTANCE.md` and ensure:
-- `npm install` (or pnpm) works cleanly
-- `npm test` passes
+- `bun ci` works cleanly
+- `bun run test` passes
 - `docker build .` succeeds
 - `docker run -p 8080:8080 ...` serves game
 - `curl /healthz` ok

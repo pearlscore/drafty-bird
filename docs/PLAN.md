@@ -98,7 +98,7 @@ Behavior when enabled:
   - set span attrs (`chaos.injected=true`, `chaos.type=*`)
 
 ## Build/Test Plan
-- Root npm scripts orchestrate lint, test, build.
+- Root Bun scripts orchestrate lint, test, build.
 - Web tests: deterministic game logic + mount smoke test.
 - Server tests: health/ready/metrics + chaos behavior.
 - Docker multi-stage build outputs single runtime container.
