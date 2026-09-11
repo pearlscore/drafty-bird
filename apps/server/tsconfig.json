@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../../dist/server",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node", "bun"]
   },
   "include": ["src"]
 }

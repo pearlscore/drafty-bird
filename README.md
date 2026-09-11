@@ -17,10 +17,10 @@ Plan and design docs:
   - structured JSON logs with `request_id`
   - OpenTelemetry traces (HTTP + custom spans)
   - opt-in chaos injection controls
-- Leaderboard persistence with SQLite when available, with in-memory fallback.
+- Leaderboard persistence via `bun:sqlite`, with an in-memory fallback outside the Bun runtime.
 
 ## Tech Stack
-- Node.js `20.11.1` (see `.nvmrc`)
+- Bun `1.4.0` (see `.bun-version`) as package manager, task runner, and server runtime
 - TypeScript strict mode
 - React + Vite
 - Express
@@ -31,19 +31,19 @@ Plan and design docs:
 
 ## Local Dev
 ```bash
-npm install
-npm run dev
+bun ci
+bun run dev
 ```
 
-Open `http://localhost:5173`. `npm run dev` starts the API server (`:8080`) and the Vite dev server (`:5173`) concurrently; the Vite config proxies `/leaderboard`, `/score`, and `/game-start` to `:8080`, so leaderboard data flows without any env var.
+Open `http://localhost:5173`. `bun run dev` starts the API server (`:8080`) and the Vite dev server (`:5173`) concurrently; the Vite config proxies `/leaderboard`, `/score`, and `/game-start` to `:8080`, so leaderboard data flows without any env var.
 
-If you prefer separate terminals, run `npm run dev:server` and `npm run dev:web` instead. To point the web app at an API on a non-default host or port, set `VITE_API_BASE` (e.g. `VITE_API_BASE=http://localhost:9090`) — when set it bypasses the proxy.
+If you prefer separate terminals, run `bun run dev:server` and `bun run dev:web` instead. To point the web app at an API on a non-default host or port, set `VITE_API_BASE` (e.g. `VITE_API_BASE=http://localhost:9090`) — when set it bypasses the proxy.
 
 ## Local Production Run
 ```bash
-npm install
-npm run build
-npm start
+bun ci
+bun run build
+bun run start
 ```
 
 Open `http://localhost:8080`.

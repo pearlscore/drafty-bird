@@ -1,8 +1,8 @@
 # Acceptance Checklist
 
-- [x] `npm install` works cleanly.
-- [x] `npm test` passes.
-- [x] `npm run build` succeeds.
+- [x] `bun ci` works cleanly.
+- [x] `bun run test` passes.
+- [x] `bun run build` succeeds.
 - [x] `docker build -f docker/Dockerfile -t drafty-bird:local .` succeeds.
 - [x] `docker run -p 8080:8080 drafty-bird:local` serves the game.
 - [x] `curl http://localhost:8080/healthz` returns `200`.

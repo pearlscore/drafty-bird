@@ -51,13 +51,12 @@ const createMemoryStore = (): ScoreStore => {
 
 export const createScoreStore = async (dbPath: string, logger: pino.Logger): Promise<ScoreStore> => {
   try {
-    const sqliteModule = await import('better-sqlite3');
-    const Database = sqliteModule.default;
+    const { Database } = await import('bun:sqlite');
 
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
-    const db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
+    const db = new Database(dbPath, { create: true });
+    db.exec('PRAGMA journal_mode = WAL;');
     db.exec(`
       CREATE TABLE IF NOT EXISTS scores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +67,7 @@ export const createScoreStore = async (dbPath: string, logger: pino.Logger): Pro
     `);
 
     const insertStmt = db.prepare(
-      'INSERT INTO scores (player, score, created_at) VALUES (@player, @score, @created_at)',
+      'INSERT INTO scores (player, score, created_at) VALUES ($player, $score, $created_at)',
     );
     const leaderboardStmt = db.prepare(
       'SELECT player, score, created_at FROM scores ORDER BY score DESC, created_at ASC LIMIT ?',
@@ -82,9 +81,9 @@ export const createScoreStore = async (dbPath: string, logger: pino.Logger): Pro
       ready: true,
       async insertScore(entry) {
         insertStmt.run({
-          player: entry.player,
-          score: entry.score,
-          created_at: entry.createdAt,
+          $player: entry.player,
+          $score: entry.score,
+          $created_at: entry.createdAt,
         });
       },
       async getLeaderboard(limit = 10) {
@@ -108,9 +107,19 @@ export const createScoreStore = async (dbPath: string, logger: pino.Logger): Pro
       },
     };
   } catch (error) {
+    // bun:sqlite resolves only under the Bun runtime. In production that means
+    // the process was launched with the wrong runtime, and degrading to memory
+    // would lose every score on restart without anyone noticing.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        `SQLite leaderboard store unavailable at ${dbPath}. ` +
+          'bun:sqlite requires the Bun runtime — start the server with `bun`, not `node`.',
+        { cause: error },
+      );
+    }
     logger.warn(
       { err: error, dbPath },
-      'SQLite unavailable. Falling back to in-memory leaderboard store',
+      'bun:sqlite unavailable outside the Bun runtime. Using in-memory leaderboard store',
     );
     return createMemoryStore();
   }

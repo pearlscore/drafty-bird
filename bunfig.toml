@@ -1,0 +1,11 @@
+# Pearl dependency-hardening policy.
+#
+# ignoreScripts blocks install-time code execution, the path most supply-chain
+# attacks take. auto = "disable" stops Bun installing a package just because
+# something imported it. minimumReleaseAge quarantines newly published versions
+# for seven days, so upstream has time to yank a bad release before Pearl
+# resolves it.
+[install]
+auto = "disable"
+ignoreScripts = true
+minimumReleaseAge = 604800
